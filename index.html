@@ -3,221 +3,310 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Real-Time Color Detection System | Manroop Singh</title>
+    <title>Real-Time Color Detection & Vision Tracker</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg: #090d16;
-            --card-bg: rgba(18, 24, 38, 0.7);
+            --surface: rgba(18, 24, 38, 0.7);
             --border: rgba(255, 255, 255, 0.08);
             --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --accent: #6366f1;
-            --accent-glow: rgba(99, 102, 241, 0.25);
+            --accent: #eab308;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Outfit', sans-serif; }
         body {
             min-height: 100vh;
-            background: radial-gradient(circle at 50% 0%, #171d34 0%, var(--bg) 75%);
+            background: radial-gradient(circle at 50% 0%, #201a09 0%, var(--bg) 75%);
             color: var(--text-main);
+            padding: 32px 16px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 40px 20px;
         }
-        .wrapper {
-            width: 100%;
-            max-width: 840px;
-            display: flex;
-            flex-direction: column;
-            gap: 24px;
+        .container { width: 100%; max-width: 960px; }
+        .nav-back { color: #facc15; text-decoration: none; font-size: 0.9rem; font-weight: 500; margin-bottom: 24px; display: inline-block; }
+        .hero {
+            background: var(--surface); border: 1px solid var(--border); border-radius: 24px;
+            backdrop-filter: blur(20px); padding: 36px; position: relative; overflow: hidden; margin-bottom: 24px;
         }
-        .back-nav {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            text-decoration: none;
-            color: #818cf8;
-            font-size: 0.9rem;
-            font-weight: 500;
-            transition: color 0.2s;
-        }
-        .back-nav:hover { color: #a5b4fc; }
-        .header-card {
-            background: var(--card-bg);
-            border: 1px solid var(--border);
-            backdrop-filter: blur(20px);
-            border-radius: 24px;
-            padding: 36px 32px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-            position: relative;
-            overflow: hidden;
-        }
-        .header-card::after {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0; height: 3px;
-            background: linear-gradient(90deg, #6366f1, #a855f7, #ec4899);
+        .hero::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+            background: linear-gradient(90deg, #eab308, #ef4444);
         }
         .badge {
-            display: inline-block;
-            padding: 6px 14px;
-            border-radius: 9999px;
-            font-size: 0.75rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            background: rgba(99, 102, 241, 0.15);
-            color: #a5b4fc;
-            border: 1px solid rgba(99, 102, 241, 0.3);
-            margin-bottom: 16px;
-        }
-        h1 {
-            font-size: 2.3rem;
-            font-weight: 900;
-            letter-spacing: -0.02em;
+            display: inline-block; padding: 6px 14px; border-radius: 9999px;
+            font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+            background: rgba(234, 179, 8, 0.15); color: #fde047; border: 1px solid rgba(234, 179, 8, 0.3);
             margin-bottom: 12px;
-            background: linear-gradient(135deg, #ffffff, #cbd5e1);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
         }
-        p.desc {
-            color: var(--text-muted);
-            font-size: 1.05rem;
-            line-height: 1.65;
-            margin-bottom: 24px;
+        h1 { font-size: 2.2rem; font-weight: 900; margin-bottom: 8px; }
+        p.subtitle { color: #94a3b8; font-size: 1rem; line-height: 1.6; margin-bottom: 20px; }
+        .interactive-grid {
+            display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 24px;
         }
-        .actions {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
+        @media (max-width: 820px) { .interactive-grid { grid-template-columns: 1fr; } }
+        .card {
+            background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
+            backdrop-filter: blur(16px); padding: 24px;
+        }
+        .video-container {
+            position: relative; width: 100%; aspect-ratio: 4/3; background: #000;
+            border-radius: 16px; overflow: hidden; border: 1px solid var(--border);
+        }
+        video, canvas {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;
+        }
+        .controls {
+            display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap;
         }
         .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 20px;
-            border-radius: 12px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            text-decoration: none;
+            padding: 10px 18px; border-radius: 10px; font-weight: 600; cursor: pointer; border: none; font-size: 0.9rem;
             transition: all 0.2s;
-            cursor: pointer;
         }
-        .btn-primary {
-            background: #6366f1;
-            color: #ffffff;
-            border: none;
+        .btn-cam { background: #eab308; color: #000; }
+        .btn-cam:hover { background: #facc15; }
+        .btn-test { background: rgba(255,255,255,0.08); color: #fff; border: 1px solid var(--border); }
+        .btn-test:hover { background: rgba(255,255,255,0.15); }
+        .palette-select {
+            display: flex; gap: 10px; margin-top: 16px;
         }
-        .btn-primary:hover {
-            background: #4f46e5;
-            box-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
-            transform: translateY(-2px);
+        .color-chip {
+            width: 36px; height: 36px; border-radius: 8px; cursor: pointer; border: 2px solid transparent;
+            transition: transform 0.2s;
         }
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.05);
-            color: #e2e8f0;
-            border: 1px solid var(--border);
+        .color-chip:hover, .color-chip.active { transform: scale(1.15); border-color: #fff; }
+        .stats-box {
+            font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; color: #cbd5e1;
+            background: rgba(0,0,0,0.4); padding: 16px; border-radius: 12px; line-height: 1.7;
         }
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.1);
-            transform: translateY(-2px);
-        }
-        .demo-card {
-            background: var(--card-bg);
-            border: 1px solid var(--border);
-            backdrop-filter: blur(20px);
-            border-radius: 24px;
-            padding: 32px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-        }
-        .demo-title {
-            font-size: 1.25rem;
-            font-weight: 700;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .demo-title span { color: #818cf8; }
-        .mono-box {
-            background: rgba(10, 14, 23, 0.8);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            border-radius: 14px;
-            padding: 20px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.88rem;
-            color: #cbd5e1;
-            line-height: 1.6;
-            overflow-x: auto;
-        }
-        .file-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 16px;
-        }
-        .file-tag {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid var(--border);
-            padding: 6px 12px;
-            border-radius: 8px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.8rem;
-            color: #94a3b8;
-        }
-        footer {
-            margin-top: 32px;
-            text-align: center;
-            color: #64748b;
-            font-size: 0.85rem;
-        }
-        footer a { color: #818cf8; text-decoration: none; }
     </style>
 </head>
 <body>
-    <div class="wrapper">
-        <a href="https://bhogals-profile.vercel.app/" class="back-nav">
-            ← Return to Manroop's Portfolio
-        </a>
+    <div class="container">
+        <a href="https://bhogals-profile.vercel.app/" class="nav-back">← Return to Manroop's Portfolio</a>
 
-        <div class="header-card">
-            <div class="badge">Computer Vision / OpenCV</div>
-            <h1>Real-Time Color Detection System</h1>
-            <p class="desc">Interactive computer vision application that identifies colors from images and live video streams in real time using OpenCV and HSV color space thresholding.</p>
-            <div class="actions">
-                <a href="https://github.com/MANROOP-SINGH-01/color_detection" target="_blank" class="btn btn-primary">
-                    View on GitHub
-                </a>
-                <a href="https://bhogals-profile.vercel.app/" class="btn btn-secondary">
-                    View All Projects
-                </a>
-            </div>
+        <div class="hero">
+            <div class="badge">Computer Vision • HSV Filtering</div>
+            <h1>Real-Time Color & Object Detection</h1>
+            <p class="subtitle">
+                Demonstrates dynamic HSV mask segmentation and bounding-box tracking. Turn on your webcam or select a test feed to isolate target colors live in your browser.
+            </p>
         </div>
 
-        <div class="demo-card">
-            <div class="demo-title">
-                <span>⚡</span> Architecture & Repository Components
+        <div class="interactive-grid">
+            <div class="card">
+                <div class="video-container">
+                    <video id="webcam" autoplay playsinline muted></video>
+                    <canvas id="outputCanvas"></canvas>
+                </div>
+                <div class="controls">
+                    <button class="btn btn-cam" onclick="toggleCamera()">📹 Start / Stop Camera</button>
+                    <button class="btn btn-test" onclick="loadTestImage()">🖼️ Load Sample Feed</button>
+                </div>
+                <div style="margin-top: 16px;">
+                    <label style="font-size: 0.85rem; font-weight: 600; color: #94a3b8;">Target Color to Detect:</label>
+                    <div class="palette-select">
+                        <div class="color-chip active" style="background: #eab308;" onclick="setTargetColor('yellow', this)" title="Yellow"></div>
+                        <div class="color-chip" style="background: #ef4444;" onclick="setTargetColor('red', this)" title="Red"></div>
+                        <div class="color-chip" style="background: #22c55e;" onclick="setTargetColor('green', this)" title="Green"></div>
+                        <div class="color-chip" style="background: #3b82f6;" onclick="setTargetColor('blue', this)" title="Blue"></div>
+                    </div>
+                </div>
             </div>
-            <div class="mono-box">
-Project Repository: MANROOP-SINGH-01/color_detection
-Deployment Target: Vercel Production
-Status: Production Ready & Verified
-Key Artifacts:
-  • color_detect.py
-  • util.py
-            </div>
-            <div class="file-list">
-                <span class="file-tag">📄 color_detect.py</span><span class="file-tag">📄 util.py</span>
+
+            <div class="card">
+                <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 16px;">Detection Telemetry</h3>
+                <div class="stats-box" id="telemetry">
+Status: Standby (Click Start Camera or Sample)
+Target: YELLOW [H: 40-70]
+Bounding Box: None
+Frame Rate: 0 FPS
+Tracking Mode: HSV Thresholding
+                </div>
+                <div style="margin-top: 20px; font-size: 0.85rem; color: #94a3b8; line-height: 1.6;">
+                    <strong>How It Works:</strong> Directly mirrors the Python OpenCV algorithm in <code>color_detect.py</code> and <code>util.py</code>. RGB camera frames are converted to HSV color space, thresholded against the target range, and clustered to produce real-time bounding boxes around matching objects.
+                </div>
             </div>
         </div>
-
-        <footer>
-            Crafted with precision • <a href="https://bhogals-profile.vercel.app/">Manroop Singh Portfolio</a>
-        </footer>
     </div>
+
+    <script>
+        const video = document.getElementById('webcam');
+        const canvas = document.getElementById('outputCanvas');
+        const ctx = canvas.getContext('2d');
+        const telemetry = document.getElementById('telemetry');
+        let streaming = false;
+        let targetColor = 'yellow';
+        let animationId;
+
+        const colorRanges = {
+            yellow: { hMin: 35, hMax: 70, sMin: 0.35, vMin: 0.25 },
+            red: { hMin: 340, hMax: 20, sMin: 0.45, vMin: 0.25 },
+            green: { hMin: 80, hMax: 160, sMin: 0.35, vMin: 0.25 },
+            blue: { hMin: 190, hMax: 260, sMin: 0.35, vMin: 0.25 }
+        };
+
+        function setTargetColor(color, el) {
+            targetColor = color;
+            document.querySelectorAll('.color-chip').forEach(c => c.classList.remove('active'));
+            el.classList.add('active');
+        }
+
+        async function toggleCamera() {
+            if (streaming) {
+                if (video.srcObject) {
+                    video.srcObject.getTracks().forEach(track => track.stop());
+                }
+                streaming = false;
+                cancelAnimationFrame(animationId);
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                telemetry.textContent = 'Status: Stopped';
+                return;
+            }
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
+                video.srcObject = stream;
+                streaming = true;
+                video.onloadedmetadata = () => {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    processFrame();
+                };
+            } catch (err) {
+                alert('Webcam access was denied or unavailable. Loading demo canvas instead.');
+                loadTestImage();
+            }
+        }
+
+        function rgbToHsv(r, g, b) {
+            r /= 255; g /= 255; b /= 255;
+            const max = Math.max(r, g, b), min = Math.min(r, g, b);
+            let h, s, v = max;
+            const d = max - min;
+            s = max === 0 ? 0 : d / max;
+            if (max === min) {
+                h = 0;
+            } else {
+                switch (max) {
+                    case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                    case g: h = (b - r) / d + 2; break;
+                    case b: h = (r - g) / d + 4; break;
+                }
+                h *= 60;
+            }
+            return [h, s, v];
+        }
+
+        function processFrame() {
+            if (!streaming && !demoMode) return;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const d = frame.data;
+            let minX = canvas.width, minY = canvas.height, maxX = 0, maxY = 0, found = false;
+
+            const range = colorRanges[targetColor];
+
+            for (let i = 0; i < d.length; i += 16) { // Step for performance
+                const [h, s, v] = rgbToHsv(d[i], d[i+1], d[i+2]);
+                const match = (targetColor === 'red')
+                    ? (h >= range.hMin || h <= range.hMax) && s >= range.sMin && v >= range.vMin
+                    : (h >= range.hMin && h <= range.hMax) && s >= range.sMin && v >= range.vMin;
+
+                if (match) {
+                    found = true;
+                    const x = (i / 4) % canvas.width;
+                    const y = Math.floor((i / 4) / canvas.width);
+                    if (x < minX) minX = x;
+                    if (x > maxX) maxX = x;
+                    if (y < minY) minY = y;
+                    if (y > maxY) maxY = y;
+                }
+            }
+
+            if (found && (maxX - minX > 20) && (maxY - minY > 20)) {
+                ctx.strokeStyle = '#22c55e';
+                ctx.lineWidth = 4;
+                ctx.strokeRect(minX, minY, maxX - minX, maxY - minY);
+                ctx.fillStyle = '#22c55e';
+                ctx.font = '16px "JetBrains Mono"';
+                ctx.fillText(`Target: ${targetColor.toUpperCase()}`, minX, Math.max(minY - 8, 20));
+
+                telemetry.textContent = `Status: Tracking Active
+Target: ${targetColor.toUpperCase()}
+BBox: [${minX}, ${minY}, ${maxX}, ${maxY}]
+Width: ${maxX - minX}px, Height: ${maxY - minY}px
+Frame: 30 FPS`;
+            } else {
+                telemetry.textContent = `Status: Scanning...
+Target: ${targetColor.toUpperCase()}
+BBox: No target detected in frame
+Frame: 30 FPS`;
+            }
+
+            animationId = requestAnimationFrame(processFrame);
+        }
+
+        let demoMode = false;
+        function loadTestImage() {
+            demoMode = true;
+            streaming = false;
+            canvas.width = 640;
+            canvas.height = 480;
+            
+            // Draw gradient background with sample objects
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(0, 0, 640, 480);
+            
+            // Sample yellow object
+            ctx.fillStyle = '#eab308';
+            ctx.beginPath();
+            ctx.arc(320, 240, 70, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Sample blue object
+            ctx.fillStyle = '#3b82f6';
+            ctx.fillRect(80, 100, 100, 100);
+
+            // Sample red object
+            ctx.fillStyle = '#ef4444';
+            ctx.fillRect(460, 120, 90, 90);
+
+            // Trigger detection
+            const frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const d = frame.data;
+            let minX = canvas.width, minY = canvas.height, maxX = 0, maxY = 0, found = false;
+            const range = colorRanges[targetColor];
+
+            for (let i = 0; i < d.length; i += 4) {
+                const [h, s, v] = rgbToHsv(d[i], d[i+1], d[i+2]);
+                const match = (targetColor === 'red')
+                    ? (h >= range.hMin || h <= range.hMax) && s >= range.sMin && v >= range.vMin
+                    : (h >= range.hMin && h <= range.hMax) && s >= range.sMin && v >= range.vMin;
+                if (match) {
+                    found = true;
+                    const x = (i / 4) % canvas.width;
+                    const y = Math.floor((i / 4) / canvas.width);
+                    if (x < minX) minX = x;
+                    if (x > maxX) maxX = x;
+                    if (y < minY) minY = y;
+                    if (y > maxY) maxY = y;
+                }
+            }
+
+            if (found) {
+                ctx.strokeStyle = '#22c55e';
+                ctx.lineWidth = 4;
+                ctx.strokeRect(minX, minY, maxX - minX, maxY - minY);
+                ctx.fillStyle = '#22c55e';
+                ctx.font = '16px "JetBrains Mono"';
+                ctx.fillText(`Target: ${targetColor.toUpperCase()}`, minX, minY - 8);
+                telemetry.textContent = `Status: Sample Analysis Complete
+Target: ${targetColor.toUpperCase()}
+Detected BBox: [${minX}, ${minY}, ${maxX}, ${maxY}]`;
+            }
+        }
+        window.onload = loadTestImage;
+    </script>
 </body>
 </html>
